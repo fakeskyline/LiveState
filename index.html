@@ -1,355 +1,673 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LiveState</title>
 
+    <link href="https://fonts.cdnfonts.com/css/product-sans" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <style>
-        :root {
-            --md-sys-color-surface: #1C1B1F;
-            --md-sys-color-on-surface: #E6E1E5;
-            --md-sys-color-surface-variant: #49454F;
-            --md-sys-color-on-surface-variant: #CAC4D0;
-            --md-sys-color-outline: #938F99;
-            --md-sys-color-primary: #D0BCFF;
-            --md-sys-shape-corner-large: 16px;
-            --md-sys-shape-corner-medium: 12px;
-            --md-sys-shape-corner-full: 999px;
-            --md-sys-elevation-level2: 0 1px 2px rgba(0,0,0,0.3), 0 2px 6px 2px rgba(0,0,0,0.15);
-            --md-sys-elevation-level3: 0 4px 8px 3px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.3);
-            --md-sys-elevation-level4: 0 6px 10px 4px rgba(0,0,0,0.15), 0 2px 3px rgba(0,0,0,0.3);
+        :root, [data-theme="dark"] {
+            --md-surface: #1C1B1F; --md-on-surface: #E6E1E5;
+            --md-surface-variant: #49454F; --md-on-surface-variant: #CAC4D0;
+            --md-outline: #938F99; --md-primary: #D0BCFF;
+            --md-primary-container: rgba(208, 188, 255, 0.14);
+            --md-popup-bg: #49454F;
+            --md-panel-bg: rgba(43, 41, 48, 0.94);
+            --md-panel-bg-solid: #2B2930;
+            --md-border-soft: rgba(255, 255, 255, 0.08);
+            --md-tooltip-bg: #2B2930; --md-tooltip-fg: #FFFFFF;
+            --md-finish-bg: #FFFFFF; --md-finish-fg: #1C1B1F;
+            --md-elevation-2: 0 1px 2px rgba(0,0,0,.3), 0 2px 6px 2px rgba(0,0,0,.15);
+            --md-elevation-3: 0 4px 8px 3px rgba(0,0,0,.15), 0 1px 3px rgba(0,0,0,.3);
+            --md-elevation-4: 0 6px 10px 4px rgba(0,0,0,.15), 0 2px 3px rgba(0,0,0,.3);
+        }
+        [data-theme="light"] {
+            --md-surface: #FEF7FF; --md-on-surface: #1D1B20;
+            --md-surface-variant: #E7E0EC; --md-on-surface-variant: #49454F;
+            --md-outline: #79747E; --md-primary: #6750A4;
+            --md-primary-container: rgba(103, 80, 164, 0.12);
+            --md-popup-bg: #F3EDF7;
+            --md-panel-bg: rgba(255, 255, 255, 0.94);
+            --md-panel-bg-solid: #FFFFFF;
+            --md-border-soft: rgba(0, 0, 0, 0.08);
+            --md-tooltip-bg: #313033; --md-tooltip-fg: #FFFFFF;
+            --md-finish-bg: #6750A4; --md-finish-fg: #FFFFFF;
+            --md-elevation-2: 0 1px 2px rgba(0,0,0,.12), 0 2px 6px 2px rgba(0,0,0,.08);
+            --md-elevation-3: 0 4px 8px 3px rgba(0,0,0,.1), 0 1px 3px rgba(0,0,0,.18);
+            --md-elevation-4: 0 6px 10px 4px rgba(0,0,0,.1), 0 2px 3px rgba(0,0,0,.2);
+        }
+        [data-theme="midnight"] {
+            --md-surface: #000000; --md-on-surface: #F5F5F5;
+            --md-surface-variant: #1F1F1F; --md-on-surface-variant: #B0B0B0;
+            --md-outline: #6B6B6B; --md-primary: #BB86FC;
+            --md-primary-container: rgba(187, 134, 252, 0.15);
+            --md-popup-bg: #1F1F1F;
+            --md-panel-bg: rgba(18, 18, 18, 0.96);
+            --md-panel-bg-solid: #121212;
+            --md-border-soft: rgba(255, 255, 255, 0.1);
+            --md-tooltip-bg: #1F1F1F; --md-tooltip-fg: #F5F5F5;
+            --md-finish-bg: #BB86FC; --md-finish-fg: #000000;
+            --md-elevation-2: 0 1px 2px rgba(0,0,0,.5), 0 2px 6px 2px rgba(0,0,0,.3);
+            --md-elevation-3: 0 4px 8px 3px rgba(0,0,0,.4), 0 1px 3px rgba(0,0,0,.6);
+            --md-elevation-4: 0 6px 10px 4px rgba(0,0,0,.4), 0 2px 3px rgba(0,0,0,.6);
         }
 
-        * { -webkit-tap-highlight-color: transparent; }
-
-        body { margin: 0; padding: 0; font-family: 'Roboto', sans-serif; background: var(--md-sys-color-surface); overflow: hidden; }
+        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+        body { margin: 0; padding: 0; font-family: 'Product Sans', 'Google Sans', 'Roboto', sans-serif; background: var(--md-surface); color: var(--md-on-surface); overflow: hidden; transition: background 0.3s ease, color 0.3s ease; }
         #map { width: 100%; height: 100vh; z-index: 1; }
 
         #refresh-indicator {
-            position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-8px);
-            z-index: 1000; background: var(--md-sys-color-surface-variant);
-            color: var(--md-sys-color-on-surface); padding: 8px 16px;
-            border-radius: var(--md-sys-shape-corner-full); font-size: 13px;
-            font-family: 'Roboto', sans-serif;
-            box-shadow: var(--md-sys-elevation-level3);
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-12px);
+            z-index: 1100; background: var(--md-panel-bg);
+            backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%);
+            color: var(--md-on-surface); padding: 10px 20px; border-radius: 22px;
+            font-size: 13px; font-weight: 500; box-shadow: var(--md-elevation-3);
             opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease;
-            pointer-events: none;
-            display: flex; align-items: center; gap: 8px;
+            pointer-events: none; display: flex; align-items: center; gap: 10px;
+            border: 1px solid var(--md-border-soft);
         }
         #refresh-indicator.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
-        #refresh-indicator .spinner {
-            width: 14px; height: 14px;
-            border: 2px solid var(--md-sys-color-on-surface-variant);
-            border-top-color: transparent; border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
+        #refresh-indicator .spinner { width: 14px; height: 14px; border: 2px solid var(--md-on-surface-variant); border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         .leaflet-popup-content-wrapper {
-            background: var(--md-sys-color-surface-variant); color: var(--md-sys-color-on-surface);
-            border-radius: var(--md-sys-shape-corner-large);
-            box-shadow: var(--md-sys-elevation-level3); padding: 0; font-family: 'Roboto', sans-serif;
-            overflow: hidden;
+            background: var(--md-popup-bg); color: var(--md-on-surface);
+            border-radius: 24px; box-shadow: var(--md-elevation-3);
+            padding: 0; font-family: 'Product Sans', 'Google Sans', 'Roboto', sans-serif; overflow: hidden;
         }
-        .leaflet-popup-content { margin: 0; padding: 16px; font-size: 14px; line-height: 20px; letter-spacing: 0.25px; }
-        .leaflet-popup-tip { background: var(--md-sys-color-surface-variant); box-shadow: var(--md-sys-elevation-level3); }
+        .leaflet-popup-content { margin: 0; padding: 18px 22px; font-size: 14px; line-height: 20px; letter-spacing: 0.2px; }
+        .leaflet-popup-tip { background: var(--md-popup-bg); box-shadow: var(--md-elevation-3); border-radius: 4px; }
         .leaflet-popup-close-button { display: none; }
-        .md3-popup-content { display: flex; flex-direction: column; gap: 8px; }
-        .md3-popup-status { font-size: 16px; font-weight: 500; color: var(--md-sys-color-on-surface); }
-        .md3-popup-description { font-size: 14px; color: var(--md-sys-color-on-surface-variant); }
+        .md3-popup-content { display: flex; flex-direction: column; gap: 6px; }
+        .md3-popup-status { font-size: 16px; font-weight: 500; color: var(--md-on-surface); }
+        .md3-popup-description { font-size: 13.5px; color: var(--md-on-surface-variant); }
 
         .leaflet-control-attribution {
-            background: rgba(28, 27, 31, 0.75) !important;
-            color: var(--md-sys-color-on-surface-variant) !important;
-            border-radius: var(--md-sys-shape-corner-medium) !important;
-            padding: 3px 10px !important;
-            font-size: 11px !important;
-            margin: 0 8px 8px 0 !important;
+            background: var(--md-panel-bg) !important; color: var(--md-on-surface-variant) !important;
+            border-radius: 16px !important; padding: 5px 14px !important; font-size: 11px !important;
+            margin: 0 12px 12px 0 !important; backdrop-filter: blur(10px);
         }
-        .leaflet-control-attribution a { color: var(--md-sys-color-primary) !important; text-decoration: none !important; }
+        .leaflet-control-attribution a { color: var(--md-primary) !important; text-decoration: none !important; }
 
-        .leaflet-control-measure {
-            background: transparent;
-            border: none;
-            box-shadow: none;
-            margin-top: 16px !important;
-            margin-left: 16px !important;
-        }
-
+        .leaflet-control-measure { background: transparent; border: none; box-shadow: none; margin-top: 20px !important; margin-left: 20px !important; }
         .measure-toggle-btn {
+            position: relative; background: var(--md-panel-bg) !important; color: var(--md-on-surface) !important;
+            width: 52px !important; height: 52px !important;
+            display: flex !important; align-items: center; justify-content: center;
+            border-radius: 20px !important; box-shadow: var(--md-elevation-2);
+            backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%);
+            transition: background 0.2s, transform 0.15s, color 0.2s, box-shadow 0.2s;
+            text-decoration: none !important; border: 1px solid var(--md-border-soft) !important;
+            cursor: pointer; overflow: hidden;
+        }
+        .measure-toggle-btn:hover { box-shadow: var(--md-elevation-3); }
+        .measure-toggle-btn:active { transform: scale(0.93); }
+        .measure-toggle-btn.active { background: var(--md-primary) !important; color: var(--md-surface) !important; }
+        .measure-toggle-btn svg { width: 24px; height: 24px; fill: currentColor; display: block; pointer-events: none; }
+
+        #settings-btn {
+            position: fixed; top: 20px; right: 20px; z-index: 1000;
+            width: 52px; height: 52px;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--md-panel-bg);
+            backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%);
+            border: 1px solid var(--md-border-soft); color: var(--md-on-surface);
+            border-radius: 20px; box-shadow: var(--md-elevation-2);
+            cursor: pointer; transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+        }
+        #settings-btn:hover { box-shadow: var(--md-elevation-3); }
+        #settings-btn:active { transform: scale(0.93); }
+        #settings-btn.active { background: var(--md-primary); color: var(--md-surface); }
+        #settings-btn svg { width: 24px; height: 24px; fill: currentColor; display: block; transition: transform 0.4s ease; }
+        #settings-btn.active svg { transform: rotate(90deg); }
+
+        .settings-backdrop {
+            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(2px); z-index: 1050;
+            opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+        }
+        .settings-backdrop.visible { opacity: 1; pointer-events: auto; }
+
+        .settings-panel {
+            position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0.94);
+            z-index: 1060; width: min(560px, calc(100vw - 32px));
+            max-height: calc(100vh - 64px);
+            background: var(--md-panel-bg-solid); border: 1px solid var(--md-border-soft);
+            color: var(--md-on-surface); border-radius: 32px; box-shadow: var(--md-elevation-4);
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            overflow: hidden; display: flex; flex-direction: column;
+        }
+        .settings-panel.visible { opacity: 1; transform: translate(-50%, -50%) scale(1); pointer-events: auto; }
+
+        .settings-header { display: flex; align-items: center; justify-content: space-between; padding: 22px 24px 16px; flex-shrink: 0; }
+        .settings-title { font-size: 22px; font-weight: 500; letter-spacing: 0.2px; margin: 0; color: var(--md-on-surface); }
+        .settings-close {
+            width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+            border-radius: 14px; background: transparent; border: none;
+            color: var(--md-on-surface-variant); cursor: pointer; transition: background 0.2s;
+        }
+        .settings-close:hover { background: var(--md-primary-container); color: var(--md-primary); }
+        .settings-close svg { width: 20px; height: 20px; fill: currentColor; }
+
+        .settings-body { padding: 0 24px 24px; overflow-y: auto; flex: 1; }
+        .settings-section { margin-top: 20px; }
+        .settings-section:first-child { margin-top: 4px; }
+        .settings-label { font-size: 13px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; color: var(--md-on-surface-variant); margin-bottom: 12px; }
+
+        .theme-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .theme-card {
+            position: relative; display: flex; flex-direction: column; align-items: center;
+            gap: 8px; padding: 14px 8px; background: transparent; border: 2px solid transparent;
+            border-radius: 20px; cursor: pointer;
+            transition: background 0.2s, border-color 0.2s, transform 0.1s;
+            font-family: inherit; color: var(--md-on-surface);
+        }
+        .theme-card:hover { background: var(--md-primary-container); }
+        .theme-card:active { transform: scale(0.96); }
+        .theme-card.active { border-color: var(--md-primary); background: var(--md-primary-container); }
+        .theme-preview {
+            width: 48px; height: 48px; border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            border: 1px solid var(--md-border-soft); box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .theme-preview svg { width: 22px; height: 22px; }
+        .theme-name { font-size: 12.5px; font-weight: 500; letter-spacing: 0.2px; }
+
+        .layers-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .layer-card {
+            position: relative; display: flex; flex-direction: column;
+            background: transparent; border: 2px solid transparent;
+            border-radius: 20px; cursor: pointer; overflow: hidden;
+            padding: 0; font-family: inherit; color: var(--md-on-surface);
+            transition: border-color 0.2s, transform 0.1s; text-align: left;
+        }
+        .layer-card:active { transform: scale(0.97); }
+        .layer-card.active { border-color: var(--md-primary); }
+
+        .layer-thumb {
             position: relative;
-            background: var(--md-sys-color-surface-variant) !important;
-            color: var(--md-sys-color-on-surface) !important;
-            width: 48px !important;
-            height: 48px !important;
-            display: flex !important;
-            align-items: center;
-            justify-content: center;
-            border-radius: var(--md-sys-shape-corner-medium) !important;
-            box-shadow: var(--md-sys-elevation-level2);
-            transition: background 0.2s ease, transform 0.15s ease, color 0.2s ease, box-shadow 0.2s ease;
-            text-decoration: none !important;
-            border: none !important;
-            cursor: pointer;
-            overflow: hidden;
+            width: 100%; aspect-ratio: 16 / 10; overflow: hidden;
+            background: #333; border-radius: 18px;
         }
-        .measure-toggle-btn::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: currentColor;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-            pointer-events: none;
+        .layer-thumb-img {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%;
+            object-fit: cover; display: block;
         }
-        .measure-toggle-btn:hover { box-shadow: var(--md-sys-elevation-level3); }
-        .measure-toggle-btn:hover::after { opacity: 0.08; }
-        .measure-toggle-btn:active { transform: scale(0.94); }
-        .measure-toggle-btn.active {
-            background: #FFFFFF !important;
-            color: #1C1B1F !important;
-            box-shadow: var(--md-sys-elevation-level3);
-        }
-        .measure-toggle-btn svg {
+
+        .layer-name { padding: 8px 10px 10px; font-size: 13px; font-weight: 500; letter-spacing: 0.2px; }
+        .layer-card.active .layer-name { color: var(--md-primary); }
+        .layer-card .check-badge {
+            position: absolute; top: 8px; right: 8px;
             width: 24px; height: 24px;
-            fill: currentColor;
-            display: block;
-            pointer-events: none;
-            position: relative;
-            z-index: 1;
+            background: var(--md-primary); color: var(--md-surface);
+            border-radius: 50%; display: none; align-items: center; justify-content: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index: 5;
         }
+        .layer-card.active .check-badge { display: flex; }
+        .layer-card .check-badge svg { width: 14px; height: 14px; fill: currentColor; }
+
+        .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; gap: 12px; }
+        .toggle-label { font-size: 14px; font-weight: 500; color: var(--md-on-surface); }
+        .toggle-desc { font-size: 12px; color: var(--md-on-surface-variant); margin-top: 2px; }
+
+        .switch { position: relative; display: inline-block; width: 48px; height: 28px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .switch-slider { position: absolute; cursor: pointer; inset: 0; background: var(--md-surface-variant); border-radius: 100px; transition: 0.3s; }
+        .switch-slider::before { content: ''; position: absolute; height: 20px; width: 20px; left: 4px; bottom: 4px; background: var(--md-on-surface-variant); border-radius: 50%; transition: 0.3s; }
+        .switch input:checked + .switch-slider { background: var(--md-primary); }
+        .switch input:checked + .switch-slider::before { transform: translateX(20px); background: var(--md-surface); }
+
+        .slider-row { padding: 12px 0; }
+        .slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .slider-value { font-size: 13px; font-weight: 500; color: var(--md-primary); }
+
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 6px; background: var(--md-surface-variant); border-radius: 100px; outline: none; cursor: pointer; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: var(--md-primary); border-radius: 50%; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.3); transition: transform 0.15s; }
+        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+        input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; background: var(--md-primary); border-radius: 50%; cursor: pointer; border: none; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+
+        .resolution-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .res-btn {
+            padding: 10px 8px; border-radius: 14px; border: 2px solid transparent;
+            background: var(--md-surface-variant); color: var(--md-on-surface);
+            font-family: inherit; font-size: 13px; font-weight: 500;
+            cursor: pointer; transition: all 0.2s ease; text-align: center;
+        }
+        .res-btn:hover { background: var(--md-primary-container); }
+        .res-btn.active { border-color: var(--md-primary); background: var(--md-primary-container); color: var(--md-primary); }
+
+        .color-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .color-swatch {
+            width: 36px; height: 36px; border-radius: 12px;
+            border: 3px solid transparent; cursor: pointer;
+            transition: transform 0.15s, border-color 0.2s; position: relative;
+        }
+        .color-swatch:hover { transform: scale(1.1); }
+        .color-swatch.active { border-color: var(--md-primary); transform: scale(1.08); }
+        .color-swatch .check { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; }
+        .color-swatch.active .check { display: flex; }
+        .color-swatch .check svg { width: 18px; height: 18px; }
+
+        .color-input-wrap { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+        input[type="color"] { -webkit-appearance: none; width: 44px; height: 44px; border: 2px solid var(--md-border-soft); border-radius: 14px; cursor: pointer; padding: 3px; background: var(--md-surface-variant); }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch { border: none; border-radius: 10px; }
+        input[type="color"]::-moz-color-swatch { border: none; border-radius: 10px; }
+        .color-input-label { font-size: 13px; color: var(--md-on-surface-variant); }
 
         .measure-panel {
-            position: fixed;
-            bottom: 24px;
-            left: 50%;
-            transform: translate(-50%, 16px);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            padding: 6px;
-            background: rgba(43, 41, 48, 0.94);
-            backdrop-filter: blur(14px) saturate(140%);
-            -webkit-backdrop-filter: blur(14px) saturate(140%);
-            border-radius: var(--md-sys-shape-corner-full);
-            box-shadow: var(--md-sys-elevation-level4);
-            opacity: 0;
-            pointer-events: none;
+            position: fixed; bottom: 28px; left: 50%; transform: translate(-50%, 20px);
+            z-index: 1000; display: flex; align-items: center; gap: 4px;
+            padding: 8px; background: var(--md-panel-bg);
+            backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%);
+            border-radius: 32px; box-shadow: var(--md-elevation-4);
+            opacity: 0; pointer-events: none;
             transition: opacity 0.25s ease, transform 0.25s ease;
-            white-space: nowrap;
-            font-family: 'Roboto', sans-serif;
-            border: 1px solid rgba(255, 255, 255, 0.06);
+            white-space: nowrap; border: 1px solid var(--md-border-soft);
         }
-        .measure-panel.visible {
-            opacity: 1;
-            transform: translate(-50%, 0);
-            pointer-events: auto;
-        }
+        .measure-panel.visible { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
 
         .measure-action-btn {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 11px 18px;
-            border-radius: var(--md-sys-shape-corner-full);
-            border: none;
-            font-family: 'Roboto', sans-serif;
-            font-size: 13.5px;
-            font-weight: 500;
-            letter-spacing: 0.25px;
-            cursor: pointer;
-            transition: filter 0.15s ease, transform 0.1s ease, background 0.2s ease;
-            white-space: nowrap;
-            line-height: 1;
-            min-width: 0;
-            overflow: hidden;
+            position: relative; display: inline-flex; align-items: center; justify-content: center;
+            gap: 8px; padding: 12px 20px; border-radius: 24px; border: none;
+            font-family: inherit; font-size: 13.5px; font-weight: 500;
+            letter-spacing: 0.25px; cursor: pointer;
+            transition: filter 0.15s ease, transform 0.1s ease;
+            white-space: nowrap; line-height: 1; color: var(--md-on-surface);
         }
-        .measure-action-btn::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: currentColor;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-            pointer-events: none;
-        }
-        .measure-action-btn svg {
-            width: 17px;
-            height: 17px;
-            fill: currentColor;
-            flex-shrink: 0;
-            display: block;
-            position: relative;
-            z-index: 1;
-        }
-        .measure-action-btn span {
-            position: relative;
-            z-index: 1;
-        }
-        .measure-action-btn:hover::after { opacity: 0.1; }
+        .measure-action-btn svg { width: 17px; height: 17px; fill: currentColor; flex-shrink: 0; display: block; }
+        .measure-action-btn:hover { filter: brightness(1.15); }
         .measure-action-btn:active { transform: scale(0.96); }
-
-        .measure-btn-area {
-            background: rgba(208, 188, 255, 0.14);
-            color: #D0BCFF;
-        }
-        .measure-btn-reset {
-            background: rgba(255, 255, 255, 0.08);
-            color: #E6E1E5;
-        }
-        .measure-btn-finish {
-            background: #FFFFFF;
-            color: #1C1B1F;
-        }
-        .measure-btn-finish:hover::after { opacity: 0.06; }
-
-        .measure-panel-divider {
-            width: 1px;
-            height: 24px;
-            background: rgba(255, 255, 255, 0.1);
-            margin: 0 2px;
-            flex-shrink: 0;
-        }
+        .measure-btn-area { background: var(--md-primary-container); color: var(--md-primary); }
+        .measure-btn-reset { background: transparent; color: var(--md-on-surface); }
+        .measure-btn-finish { background: var(--md-finish-bg); color: var(--md-finish-fg); }
+        .measure-panel-divider { width: 1px; height: 24px; background: var(--md-border-soft); margin: 0 4px; flex-shrink: 0; }
 
         .measure-tooltip {
-            background: #2B2930 !important;
-            color: #FFFFFF !important;
-            border: none !important;
-            border-radius: 10px !important;
-            padding: 7px 12px !important;
-            font-family: 'Roboto', sans-serif !important;
-            font-size: 13px !important;
-            font-weight: 500 !important;
-            letter-spacing: 0.2px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.6) !important;
-            white-space: nowrap;
-            display: inline-flex !important;
-            align-items: center;
-            gap: 6px;
+            background: var(--md-tooltip-bg) !important; color: var(--md-tooltip-fg) !important;
+            border: none !important; border-radius: 16px !important;
+            padding: 8px 14px !important;
+            font-family: 'Product Sans', 'Google Sans', 'Roboto', sans-serif !important;
+            font-size: 13px !important; font-weight: 500 !important;
+            letter-spacing: 0.2px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+            white-space: nowrap; display: inline-flex !important;
+            align-items: center; gap: 6px;
         }
         .measure-tooltip::before { display: none !important; }
-
-        .measure-tooltip .tt-icon {
-            width: 14px;
-            height: 14px;
-            fill: #D0BCFF;
-            flex-shrink: 0;
-            display: block;
-        }
-        .measure-tooltip .tt-sep {
-            display: inline-block;
-            margin: 0 2px;
-            opacity: 0.4;
-        }
+        .measure-tooltip .tt-icon { width: 14px; height: 14px; fill: var(--md-primary); flex-shrink: 0; display: block; }
+        .measure-tooltip .tt-sep { display: inline-block; margin: 0 2px; opacity: 0.4; }
 
         .measure-hint {
-            position: fixed;
-            top: 16px;
-            left: 50%;
-            transform: translateX(-50%) translateY(-8px);
-            z-index: 999;
-            background: rgba(43, 41, 48, 0.94);
-            backdrop-filter: blur(14px) saturate(140%);
-            -webkit-backdrop-filter: blur(14px) saturate(140%);
-            color: #E6E1E5;
-            padding: 8px 16px;
-            border-radius: var(--md-sys-shape-corner-full);
-            box-shadow: var(--md-sys-elevation-level3);
-            font-family: 'Roboto', sans-serif;
-            font-size: 13px;
-            letter-spacing: 0.2px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            opacity: 0;
-            pointer-events: none;
+            position: fixed; top: 20px; left: 50%;
+            transform: translateX(-50%) translateY(-12px);
+            z-index: 999; background: var(--md-panel-bg);
+            backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%);
+            color: var(--md-on-surface);
+            padding: 10px 20px; border-radius: 22px;
+            box-shadow: var(--md-elevation-3); font-size: 13px; letter-spacing: 0.2px;
+            display: flex; align-items: center; gap: 10px;
+            opacity: 0; pointer-events: none;
             transition: opacity 0.25s ease, transform 0.25s ease;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            white-space: nowrap;
+            border: 1px solid var(--md-border-soft); white-space: nowrap;
         }
-        .measure-hint.visible {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
+        .measure-hint.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
         .measure-hint-dot {
-            width: 8px;
-            height: 8px;
-            background: #4CAF50;
-            border-radius: 50%;
-            box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
-            animation: pulse 2s ease-in-out infinite;
-            flex-shrink: 0;
+            width: 8px; height: 8px; background: #4CAF50;
+            border-radius: 50%; box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
+            animation: pulse 2s ease-in-out infinite; flex-shrink: 0;
         }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(0.8); }
-        }
-        .measure-hint .count {
-            font-weight: 500;
-            color: #FFFFFF;
-        }
-        .measure-hint .hint-text {
-            color: #CAC4D0;
-            font-weight: 400;
-            font-size: 12.5px;
-        }
+        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
+        .measure-hint .count { font-weight: 500; color: var(--md-on-surface); }
+        .measure-hint .hint-text { color: var(--md-on-surface-variant); font-weight: 400; font-size: 12.5px; }
 
-        @media (max-width: 520px) {
-            .measure-action-btn { padding: 10px 14px; font-size: 13px; }
+        @media (max-width: 560px) {
+            .measure-action-btn { padding: 11px 16px; font-size: 13px; }
             .measure-action-btn span { display: none; }
             .measure-action-btn svg { width: 18px; height: 18px; }
-            .measure-panel { bottom: 16px; }
-            .measure-hint { font-size: 12px; padding: 6px 12px; }
+            .measure-panel { bottom: 16px; padding: 6px; }
+            .measure-hint { font-size: 12px; padding: 8px 14px; }
             .measure-hint .hint-text { display: none; }
+            .settings-panel { border-radius: 28px; }
+            .settings-title { font-size: 20px; }
+            .theme-grid { gap: 8px; }
+            .theme-preview { width: 40px; height: 40px; }
         }
     </style>
 </head>
 <body>
     <div id="map"></div>
-    <div id="refresh-indicator"><span class="spinner"></span><span>Обновление данных…</span></div>
+    <div id="refresh-indicator"><span class="spinner"></span><span>Оновлення даних…</span></div>
+
+    <button id="settings-btn" aria-label="Налаштування">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+    </button>
+
+    <div class="settings-backdrop" id="settings-backdrop"></div>
+    <div class="settings-panel" id="settings-panel" role="dialog" aria-modal="true">
+        <div class="settings-header">
+            <h2 class="settings-title">Налаштування</h2>
+            <button class="settings-close" id="settings-close" aria-label="Закрити">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
+        </div>
+        <div class="settings-body">
+            <div class="settings-section">
+                <div class="settings-label">Тема інтерфейсу</div>
+                <div class="theme-grid" id="theme-grid">
+                    <button class="theme-card" data-theme-value="dark">
+                        <div class="theme-preview" style="background: linear-gradient(135deg, #1C1B1F 50%, #49454F 50%);">
+                            <svg viewBox="0 0 24 24" fill="#D0BCFF"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>
+                        </div>
+                        <span class="theme-name">Темна</span>
+                    </button>
+                    <button class="theme-card" data-theme-value="light">
+                        <div class="theme-preview" style="background: linear-gradient(135deg, #FEF7FF 50%, #E7E0EC 50%);">
+                            <svg viewBox="0 0 24 24" fill="#6750A4"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41.39.39 1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41.39.39 1.03.39 1.41 0l1.06-1.06z"/></svg>
+                        </div>
+                        <span class="theme-name">Світла</span>
+                    </button>
+                    <button class="theme-card" data-theme-value="midnight">
+                        <div class="theme-preview" style="background: linear-gradient(135deg, #000 50%, #1F1F1F 50%);">
+                            <svg viewBox="0 0 24 24" fill="#BB86FC"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>
+                        </div>
+                        <span class="theme-name">Нічна</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="settings-label">Шар карти</div>
+                <div class="layers-grid" id="layers-grid"></div>
+            </div>
+
+            <div class="settings-section">
+                <div class="settings-label">Кордони Natural Earth</div>
+                <div class="toggle-row">
+                    <div>
+                        <div class="toggle-label">Показувати кордони</div>
+                        <div class="toggle-desc">Накладення поверх шару карти</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="ne-toggle">
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+
+                <div id="ne-controls" style="display: none;">
+                    <div class="settings-label" style="margin-top: 8px;">Деталізація</div>
+                    <div class="resolution-grid" id="ne-resolution">
+                        <button class="res-btn" data-res="10m">10m</button>
+                        <button class="res-btn" data-res="50m">50m</button>
+                        <button class="res-btn active" data-res="110m">110m</button>
+                    </div>
+
+                    <div class="settings-label" style="margin-top: 16px;">Колір кордонів</div>
+                    <div class="color-row" id="ne-color-row">
+                        <div class="color-swatch active" data-color="#FFFFFF" style="background: #FFFFFF;">
+                            <span class="check"><svg viewBox="0 0 24 24" fill="#000"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+                        </div>
+                        <div class="color-swatch" data-color="#D32F2F" style="background: #D32F2F;">
+                            <span class="check"><svg viewBox="0 0 24 24" fill="#fff"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+                        </div>
+                        <div class="color-swatch" data-color="#388E3C" style="background: #388E3C;">
+                            <span class="check"><svg viewBox="0 0 24 24" fill="#fff"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+                        </div>
+                        <div class="color-swatch" data-color="#1976D2" style="background: #1976D2;">
+                            <span class="check"><svg viewBox="0 0 24 24" fill="#fff"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+                        </div>
+                        <div class="color-swatch" data-color="#FFC107" style="background: #FFC107;">
+                            <span class="check"><svg viewBox="0 0 24 24" fill="#000"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+                        </div>
+                    </div>
+                    <div class="color-input-wrap">
+                        <input type="color" id="ne-color-custom" value="#FFFFFF">
+                        <span class="color-input-label">Власний колір</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="settings-label">Фільтри карти</div>
+                <div class="slider-row">
+                    <div class="slider-header">
+                        <span class="toggle-label">Розмиття</span>
+                        <span class="slider-value" id="blur-value">0 px</span>
+                    </div>
+                    <input type="range" id="blur-slider" min="0" max="10" step="1" value="0">
+                </div>
+                <div class="toggle-row">
+                    <div>
+                        <div class="toggle-label">Чорно-білий</div>
+                        <div class="toggle-desc">Знебарвлення шару карти</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="grayscale-toggle">
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-label" style="margin-top: 12px;">Колірний фільтр</div>
+                <div class="color-row" id="filter-color-row">
+                    <div class="color-swatch active" data-color="none" style="background: linear-gradient(135deg, #888 50%, #ccc 50%);">
+                        <span class="check"><svg viewBox="0 0 24 24" fill="#fff"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+                    </div>
+                    <div class="color-swatch" data-color="sepia(1)" style="background: #A8845C;">
+                        <span class="check"><svg viewBox="0 0 24 24" fill="#fff"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+                    </div>
+                    <div class="color-swatch" data-color="hue-rotate(180deg)" style="background: linear-gradient(135deg, #f0f 50%, #0ff 50%);">
+                        <span class="check"><svg viewBox="0 0 24 24" fill="#fff"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+                    </div>
+                    <div class="color-swatch" data-color="invert(1)" style="background: linear-gradient(135deg, #000 50%, #fff 50%);">
+                        <span class="check"><svg viewBox="0 0 24 24" fill="#888"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // ==========================================================================
-        // Настройки
-        // ==========================================================================
         var RECENT_LIBERATION_DAYS = 14;
-        var REFRESH_INTERVAL_MS = 24 * 60 * 60 * 1000;
+        var REFRESH_INTERVAL_MS = 60 * 60 * 1000;
         var RETRY_DELAY_MS = 5 * 60 * 1000;
-        var VISIBILITY_STALE_MS = 60 * 60 * 1000;
+        var VISIBILITY_STALE_MS = 30 * 60 * 1000;
         var DEBUG = true;
 
         var measureModeActive = false;
 
-        // ==========================================================================
-        // Карта
-        // ==========================================================================
+        var TILE_LAYERS = {
+            'osm': {
+                name: 'OpenStreetMap',
+                preview: 'https://tile.openstreetmap.org/4/8/5.png',
+                create: function() {
+                    return [L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 })];
+                }
+            },
+            'esri-imagery': {
+                name: 'ESRI Супутник',
+                preview: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/4/5/8',
+                create: function() {
+                    return [L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 })];
+                }
+            },
+            'esri-hybrid': {
+                name: 'ESRI Hybrid',
+                preview: [
+                    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/4/5/8',
+                    'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/4/5/8'
+                ],
+                create: function() {
+                    return [
+                        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }),
+                        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 })
+                    ];
+                }
+            },
+            'esri-topo': {
+                name: 'ESRI Топо',
+                preview: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/4/5/8',
+                create: function() {
+                    return [L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 })];
+                }
+            },
+            'esri-street': {
+                name: 'ESRI Вулиці',
+                preview: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/4/5/8',
+                create: function() {
+                    return [L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 })];
+                }
+            },
+            'esri-dark': {
+                name: 'ESRI Темна',
+                preview: 'https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/4/5/8',
+                create: function() {
+                    return [L.tileLayer('https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 })];
+                }
+            },
+            'esri-physical': {
+                name: 'ESRI Фізична',
+                preview: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/4/5/8',
+                create: function() {
+                    return [L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 8 })];
+                }
+            },
+            'esri-relief': {
+                name: 'ESRI Рельєф',
+                preview: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/4/5/8',
+                create: function() {
+                    return [L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}', { maxZoom: 13 })];
+                }
+            },
+            'esri-ocean': {
+                name: 'ESRI Океан',
+                preview: 'https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/4/5/8',
+                create: function() {
+                    return [L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 13 })];
+                }
+            },
+            'esri-natgeo': {
+                name: 'National Geographic',
+                preview: 'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/4/5/8',
+                create: function() {
+                    return [L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 })];
+                }
+            }
+        };
+
+        var DEFAULT_LAYER = 'osm';
+        var DEFAULT_THEME = 'dark';
+
+        var NATURAL_EARTH_URLS = {
+            '10m': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_0_countries.geojson',
+            '50m': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_countries.geojson',
+            '110m': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson'
+        };
+
         var map = L.map('map', {
             zoomControl: false,
-            doubleClickZoom: false
+            doubleClickZoom: false,
+            attributionControl: true
         }).setView([48.5, 37.5], 6);
 
-        L.tileLayer('https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri',
-            maxZoom: 16
-        }).addTo(map);
+        var currentTileLayers = [];
+        var neLayer = null;
+        var neLoadGeneration = 0;
+        var currentFilter = 'none';
+        var currentBlur = 0;
+        var currentGrayscale = false;
 
-        map.on('popupopen', function(e) {
-            if (measureModeActive) map.closePopup(e.popup);
-        });
+        function applyTileFilters() {
+            var filters = [];
+            if (currentBlur > 0) filters.push('blur(' + currentBlur + 'px)');
+            if (currentGrayscale) filters.push('grayscale(1)');
+            if (currentFilter && currentFilter !== 'none') filters.push(currentFilter);
 
-        // ==========================================================================
-        // Слой DeepState
-        // ==========================================================================
+            var filterStr = filters.length > 0 ? filters.join(' ') : 'none';
+            var tilePane = map.getPane('tilePane');
+            if (tilePane) tilePane.style.filter = filterStr;
+        }
+
+        function setBaseLayer(key) {
+            currentTileLayers.forEach(function(l) { map.removeLayer(l); });
+            currentTileLayers = [];
+
+            var def = TILE_LAYERS[key];
+            if (!def) return;
+
+            currentTileLayers = def.create();
+
+            currentTileLayers.forEach(function(l, idx) {
+                l.addTo(map);
+                if (idx === 0) l.bringToBack();
+            });
+
+            if (deepStateLayer) deepStateLayer.bringToFront();
+            if (neLayer) neLayer.bringToFront();
+
+            document.querySelectorAll('.layer-card').forEach(function(card) {
+                card.classList.toggle('active', card.dataset.layer === key);
+            });
+
+            applyTileFilters();
+            try { localStorage.setItem('livestate-layer', key); } catch(e) {}
+        }
+
+        function loadNaturalEarth(resolution) {
+            var myGeneration = ++neLoadGeneration;
+            if (neLayer) { map.removeLayer(neLayer); neLayer = null; }
+            var url = NATURAL_EARTH_URLS[resolution];
+            if (!url) return;
+            var color = getNEColor();
+
+            fetch(url)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (myGeneration !== neLoadGeneration) return;
+                    neLayer = L.geoJSON(data, {
+                        style: {
+                            color: color,
+                            weight: 1,
+                            opacity: 0.8,
+                            fillOpacity: 0,
+                            interactive: false
+                        }
+                    }).addTo(map);
+                    if (neLayer) neLayer.bringToFront();
+                })
+                .catch(function(err) { console.error('Natural Earth error:', err); });
+        }
+
+        function disableNaturalEarth() {
+            neLoadGeneration++;
+            if (neLayer) { map.removeLayer(neLayer); neLayer = null; }
+        }
+
+        function getNEColor() {
+            var active = document.querySelector('#ne-color-row .color-swatch.active');
+            if (active && active.dataset.color) return active.dataset.color;
+            return document.getElementById('ne-color-custom').value || '#FFFFFF';
+        }
+
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            document.querySelectorAll('.theme-card').forEach(function(card) {
+                card.classList.toggle('active', card.dataset.themeValue === theme);
+            });
+            try { localStorage.setItem('livestate-theme', theme); } catch(e) {}
+        }
+
+        var savedTheme = DEFAULT_THEME;
+        try { savedTheme = localStorage.getItem('livestate-theme') || DEFAULT_THEME; } catch(e) {}
+        applyTheme(savedTheme);
+
         var deepStateLayer = null;
         var lastSuccessfulLoad = 0;
         var refreshTimer = null;
@@ -361,9 +679,7 @@
         function setDeepStateInteractive(interactive) {
             if (!deepStateLayer) return;
             deepStateLayer.eachLayer(function(layer) {
-                if (layer._path) {
-                    layer._path.style.pointerEvents = interactive ? '' : 'none';
-                }
+                if (layer._path) layer._path.style.pointerEvents = interactive ? '' : 'none';
             });
         }
 
@@ -378,17 +694,13 @@
                 .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
                 .then(data => {
                     var geo = data.map;
-                    if (!geo || !geo.features) throw new Error('Некорректный формат ответа');
-
+                    if (!geo || !geo.features) throw new Error('Невірний формат відповіді');
                     var polys = geo.features.filter(f => {
                         var t = f.geometry && f.geometry.type;
                         return t === 'Polygon' || t === 'MultiPolygon';
                     });
-
                     if (deepStateLayer) { map.removeLayer(deepStateLayer); deepStateLayer = null; }
-
                     var stats = { occupied: 0, ordlo: 0, recently_liberated: 0, liberated: 0, unknown: 0, transnistria: 0 };
-
                     deepStateLayer = L.geoJSON(polys, {
                         style: function(feature) {
                             var status = getStatus(feature.properties || {});
@@ -399,7 +711,7 @@
                                 case 'ordlo':               s.color = s.fillColor = '#9C27B0'; break;
                                 case 'recently_liberated':  s.color = s.fillColor = '#1976D2'; break;
                                 case 'liberated':           s.color = s.fillColor = '#388E3C'; break;
-                                case 'transnistria':        s.color = s.fillColor = '#bcaaa4'; break; // как серая зона
+                                case 'transnistria':        s.color = s.fillColor = '#bcaaa4'; break;
                                 default:                    s.color = s.fillColor = '#bcaaa4';
                             }
                             return s;
@@ -416,27 +728,22 @@
                             );
                         }
                     }).addTo(map);
-
                     if (measureModeActive) setDeepStateInteractive(false);
-
+                    if (neLayer) neLayer.bringToFront();
                     lastSuccessfulLoad = Date.now();
-
                     if (DEBUG) {
-                        console.log('%c[DeepState] Обновлено ' + new Date().toLocaleTimeString() + ' | Полигонов: ' + polys.length, 'color:#4FC3F7;font-weight:bold');
-                        console.log('[DeepState] Статистика:', stats);
+                        console.log('%c[LiveState] Оновлено ' + new Date().toLocaleTimeString() + ' | Полігонів: ' + polys.length, 'color:#4FC3F7;font-weight:bold');
+                        console.log('[LiveState] Статистика:', stats);
                     }
                 })
                 .catch(err => {
-                    console.error('[DeepState] Ошибка:', err);
+                    console.error('[LiveState] Помилка:', err);
                     if (refreshTimer) clearTimeout(refreshTimer);
                     refreshTimer = setTimeout(loadDeepStateData, RETRY_DELAY_MS);
                 })
                 .finally(hideIndicator);
         }
 
-        // ==========================================================================
-        // Парсинг
-        // ==========================================================================
         function toStr(v) { return v == null ? '' : String(v); }
 
         function extractText(props) {
@@ -509,20 +816,12 @@
         function getStatus(props) {
             var clean = extractText(props);
             var lower = clean.toLowerCase();
-
-            // ПРИДНЕСТРОВЬЕ — проверяется раньше всего, чтобы не попасть в "окупировано".
-            // Покрываем: укр., рус., англ. варианты + аббревиатуру PMR.
-            if (lower.includes('придністров') ||
-                lower.includes('приднестров') ||
-                lower.includes('transnistria') ||
-                lower.includes('transdniestr') ||
-                lower.includes('dniester') ||
-                lower.includes('pmr')) {
+            if (lower.includes('придністров') || lower.includes('приднестров') ||
+                lower.includes('transnistria') || lower.includes('transdniestr') ||
+                lower.includes('dniester') || lower.includes('pmr')) {
                 return 'transnistria';
             }
-
             var nameStatus = null;
-
             if (lower.includes('окуповано') || lower.includes('occupied')) {
                 nameStatus = 'occupied';
             } else if (lower.includes('ордло') || lower.includes('ordlo')) {
@@ -537,7 +836,6 @@
                     nameStatus = 'liberated';
                 }
             }
-
             var colorStatus = getStatusFromColor(props);
             if (nameStatus === 'recently_liberated' || colorStatus === 'recently_liberated') return 'recently_liberated';
             if (nameStatus) return nameStatus;
@@ -547,18 +845,129 @@
 
         function getPopupData(status) {
             switch (status) {
-                case 'occupied':            return { title: 'Оккупировано', description: 'Территория находится под оккупацией' };
-                case 'ordlo':               return { title: 'ОРДЛО', description: 'Отдельные районы Донецкой и Луганской областей' };
-                case 'recently_liberated':  return { title: 'Освобождено недавно', description: 'Освобождено в течение последних 2 недель' };
-                case 'liberated':           return { title: 'Освобождено', description: 'Территория освобождена' };
-                case 'transnistria':        return { title: 'Приднестровье', description: 'Регион Приднестровья' };
-                default:                    return { title: 'Серая зона', description: 'Статус территории неизвестен' };
+                case 'occupied':            return { title: 'Окуповано', description: 'Територія під окупацією' };
+                case 'ordlo':               return { title: 'ОРДЛО', description: 'Окремі райони Донецької та Луганської областей' };
+                case 'recently_liberated':  return { title: 'Звільнено нещодавно', description: 'Звільнено протягом останніх 2 тижнів' };
+                case 'liberated':           return { title: 'Звільнено', description: 'Територія звільнена' };
+                case 'transnistria':        return { title: 'Придністров\'я', description: 'Регіон Придністров\'я' };
+                default:                    return { title: 'Сіра зона', description: 'Статус території невідомий' };
             }
         }
 
-        // ==========================================================================
-        // Авто-обновление
-        // ==========================================================================
+        var settingsBtn = document.getElementById('settings-btn');
+        var settingsPanel = document.getElementById('settings-panel');
+        var settingsBackdrop = document.getElementById('settings-backdrop');
+        var settingsClose = document.getElementById('settings-close');
+        var layersGrid = document.getElementById('layers-grid');
+
+        Object.keys(TILE_LAYERS).forEach(function(key) {
+            var def = TILE_LAYERS[key];
+            var previews = Array.isArray(def.preview) ? def.preview : [def.preview];
+            var thumbHtml = previews.map(function(url, i) {
+                return '<img class="layer-thumb-img" src="' + url + '" alt="" loading="lazy" style="z-index:' + (i + 1) + ';" onerror="this.style.display=\'none\'">';
+            }).join('');
+            var card = document.createElement('button');
+            card.className = 'layer-card';
+            card.dataset.layer = key;
+            card.type = 'button';
+            card.innerHTML =
+                '<div class="layer-thumb">' + thumbHtml + '</div>' +
+                '<span class="layer-name">' + def.name + '</span>' +
+                '<span class="check-badge"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>';
+            card.addEventListener('click', function() { setBaseLayer(key); });
+            layersGrid.appendChild(card);
+        });
+
+        function openSettings() {
+            settingsPanel.classList.add('visible');
+            settingsBackdrop.classList.add('visible');
+            settingsBtn.classList.add('active');
+        }
+        function closeSettings() {
+            settingsPanel.classList.remove('visible');
+            settingsBackdrop.classList.remove('visible');
+            settingsBtn.classList.remove('active');
+        }
+        settingsBtn.addEventListener('click', function() {
+            if (settingsPanel.classList.contains('visible')) closeSettings();
+            else openSettings();
+        });
+        settingsClose.addEventListener('click', closeSettings);
+        settingsBackdrop.addEventListener('click', closeSettings);
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && settingsPanel.classList.contains('visible')) closeSettings();
+        });
+
+        document.querySelectorAll('.theme-card').forEach(function(card) {
+            card.addEventListener('click', function() { applyTheme(card.dataset.themeValue); });
+        });
+
+        var neToggle = document.getElementById('ne-toggle');
+        var neControls = document.getElementById('ne-controls');
+
+        neToggle.addEventListener('change', function() {
+            neControls.style.display = this.checked ? 'block' : 'none';
+            if (this.checked) {
+                var activeRes = document.querySelector('#ne-resolution .res-btn.active');
+                loadNaturalEarth(activeRes ? activeRes.dataset.res : '110m');
+            } else {
+                disableNaturalEarth();
+            }
+        });
+
+        document.querySelectorAll('#ne-resolution .res-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('#ne-resolution .res-btn').forEach(function(b) { b.classList.remove('active'); });
+                this.classList.add('active');
+                if (neToggle.checked) loadNaturalEarth(this.dataset.res);
+            });
+        });
+
+        document.querySelectorAll('#ne-color-row .color-swatch').forEach(function(swatch) {
+            swatch.addEventListener('click', function() {
+                document.querySelectorAll('#ne-color-row .color-swatch').forEach(function(s) { s.classList.remove('active'); });
+                this.classList.add('active');
+                document.getElementById('ne-color-custom').value = this.dataset.color;
+                if (neToggle.checked && neLayer) {
+                    neLayer.setStyle({ color: this.dataset.color });
+                }
+            });
+        });
+
+        document.getElementById('ne-color-custom').addEventListener('input', function() {
+            document.querySelectorAll('#ne-color-row .color-swatch').forEach(function(s) { s.classList.remove('active'); });
+            if (neToggle.checked && neLayer) {
+                neLayer.setStyle({ color: this.value });
+            }
+        });
+
+        var blurSlider = document.getElementById('blur-slider');
+        var blurValue = document.getElementById('blur-value');
+        blurSlider.addEventListener('input', function() {
+            currentBlur = parseInt(this.value, 10);
+            blurValue.textContent = currentBlur + ' px';
+            applyTileFilters();
+        });
+
+        document.getElementById('grayscale-toggle').addEventListener('change', function() {
+            currentGrayscale = this.checked;
+            applyTileFilters();
+        });
+
+        document.querySelectorAll('#filter-color-row .color-swatch').forEach(function(swatch) {
+            swatch.addEventListener('click', function() {
+                document.querySelectorAll('#filter-color-row .color-swatch').forEach(function(s) { s.classList.remove('active'); });
+                this.classList.add('active');
+                currentFilter = this.dataset.color;
+                applyTileFilters();
+            });
+        });
+
+        var savedLayer = DEFAULT_LAYER;
+        try { savedLayer = localStorage.getItem('livestate-layer') || DEFAULT_LAYER; } catch(e) {}
+        if (!TILE_LAYERS[savedLayer]) savedLayer = DEFAULT_LAYER;
+        setBaseLayer(savedLayer);
+
         loadDeepStateData();
         setInterval(loadDeepStateData, REFRESH_INTERVAL_MS);
 
@@ -566,10 +975,6 @@
             if (document.hidden) return;
             if (Date.now() - lastSuccessfulLoad > VISIBILITY_STALE_MS) loadDeepStateData();
         });
-
-        // ==========================================================================
-        // ЛИНЕЙКА
-        // ==========================================================================
 
         function geodesicAreaMeters2(latlngs) {
             if (!latlngs || latlngs.length < 3) return 0;
@@ -587,213 +992,131 @@
         }
 
         (function() {
-            var ICON_RULER =
-                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H3V8h2v4h2V8h2v4h2V8h2v4h2V8h2v4h2V8h2v8z"/></svg>';
-            var ICON_RESET =
-                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>';
-            var ICON_FINISH =
-                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
-            var ICON_AREA =
-                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2 22 9.5l-3.8 11h-12.4L2 9.5 12 2zm0 2.4L4.4 10l3 8.6h9.2l3-8.6L12 4.4z"/></svg>';
+            var ICON_RULER = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H3V8h2v4h2V8h2v4h2V8h2v4h2V8h2v4h2V8h2v8z"/></svg>';
+            var ICON_RESET = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>';
+            var ICON_FINISH = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
+            var ICON_AREA = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2 22 9.5l-3.8 11h-12.4L2 9.5 12 2zm0 2.4L4.4 10l3 8.6h9.2l3-8.6L12 4.4z"/></svg>';
 
-            var LINE_COLOR = '#FFFFFF';
-            var LINE_OPACITY = 0.95;
-            var PREVIEW_OPACITY = 0.55;
-            var DOT_RADIUS = 7;
-
-            var DOT_STYLE = {
-                radius: DOT_RADIUS,
-                stroke: false,
-                weight: 0,
-                fillColor: '#FFFFFF',
-                fillOpacity: 1,
-                interactive: false
-            };
+            var LINE_COLOR = '#FFFFFF', LINE_OPACITY = 0.95, PREVIEW_OPACITY = 0.55, DOT_RADIUS = 7;
+            var DOT_STYLE = { radius: DOT_RADIUS, stroke: false, weight: 0, fillColor: '#FFFFFF', fillOpacity: 1, interactive: false };
 
             var MeasureControl = L.Control.extend({
                 options: { position: 'topleft' },
-
                 initialize: function() {
-                    this._active = false;
-                    this._points = [];
-                    this._isClosed = false;
-                    this._startMarker = null;
-                    this._endMarker = null;
-                    this._line = null;
-                    this._polygon = null;
-                    this._preview = null;
-                    this._tooltip = null;
+                    this._active = false; this._points = []; this._isClosed = false;
+                    this._startMarker = null; this._endMarker = null;
+                    this._line = null; this._polygon = null;
+                    this._preview = null; this._tooltip = null;
                 },
-
                 onAdd: function(map) {
                     this._map = map;
-
                     var container = L.DomUtil.create('div', 'leaflet-control leaflet-control-measure');
                     var btn = L.DomUtil.create('a', 'measure-toggle-btn', container);
-                    btn.href = '#';
-                    btn.title = 'Измерить расстояние и площадь';
+                    btn.href = '#'; btn.title = 'Виміряти відстань і площу';
                     btn.innerHTML = ICON_RULER;
-
                     var panel = L.DomUtil.create('div', 'measure-panel');
                     panel.innerHTML =
-                        '<button type="button" class="measure-action-btn measure-btn-area">' + ICON_AREA + '<span>Площадь</span></button>' +
+                        '<button type="button" class="measure-action-btn measure-btn-area">' + ICON_AREA + '<span>Площа</span></button>' +
                         '<div class="measure-panel-divider"></div>' +
-                        '<button type="button" class="measure-action-btn measure-btn-reset">' + ICON_RESET + '<span>Сбросить</span></button>' +
-                        '<button type="button" class="measure-action-btn measure-btn-finish">' + ICON_FINISH + '<span>Завершить</span></button>';
+                        '<button type="button" class="measure-action-btn measure-btn-reset">' + ICON_RESET + '<span>Скинути</span></button>' +
+                        '<button type="button" class="measure-action-btn measure-btn-finish">' + ICON_FINISH + '<span>Завершити</span></button>';
                     document.body.appendChild(panel);
-
                     var hint = L.DomUtil.create('div', 'measure-hint');
-                    hint.innerHTML =
-                        '<span class="measure-hint-dot"></span>' +
-                        '<span>Точек: <span class="count">0</span></span>' +
-                        '<span class="hint-text">· кликайте по карте</span>';
+                    hint.innerHTML = '<span class="measure-hint-dot"></span><span>Точок: <span class="count">0</span></span><span class="hint-text">· клікайте по карті</span>';
                     document.body.appendChild(hint);
 
                     L.DomEvent.disableClickPropagation(container);
                     L.DomEvent.disableScrollPropagation(container);
-
                     L.DomEvent.on(btn, 'click', function(e) {
-                        L.DomEvent.preventDefault(e);
-                        L.DomEvent.stopPropagation(e);
+                        L.DomEvent.preventDefault(e); L.DomEvent.stopPropagation(e);
                         if (!this._active) this._activate();
                     }, this);
+                    L.DomEvent.on(panel.querySelector('.measure-btn-reset'), 'click', function(e) { L.DomEvent.preventDefault(e); this._clearAll(); }, this);
+                    L.DomEvent.on(panel.querySelector('.measure-btn-finish'), 'click', function(e) { L.DomEvent.preventDefault(e); this._finish(); }, this);
+                    L.DomEvent.on(panel.querySelector('.measure-btn-area'), 'click', function(e) { L.DomEvent.preventDefault(e); this._closePolygon(); }, this);
 
-                    L.DomEvent.on(panel.querySelector('.measure-btn-reset'), 'click', function(e) {
-                        L.DomEvent.preventDefault(e);
-                        this._clearAll();
-                    }, this);
-
-                    L.DomEvent.on(panel.querySelector('.measure-btn-finish'), 'click', function(e) {
-                        L.DomEvent.preventDefault(e);
-                        this._finish();
-                    }, this);
-
-                    L.DomEvent.on(panel.querySelector('.measure-btn-area'), 'click', function(e) {
-                        L.DomEvent.preventDefault(e);
-                        this._closePolygon();
-                    }, this);
-
-                    this._btn = btn;
-                    this._panel = panel;
-                    this._hint = hint;
+                    this._btn = btn; this._panel = panel; this._hint = hint;
                     return container;
                 },
-
                 _updateHint: function() {
                     if (!this._hint) return;
                     var countEl = this._hint.querySelector('.count');
                     var textEl = this._hint.querySelector('.hint-text');
                     if (countEl) countEl.textContent = this._points.length;
-
                     if (textEl) {
-                        if (this._isClosed) {
-                            textEl.textContent = '· площадь рассчитана';
-                        } else if (this._points.length === 0) {
-                            textEl.textContent = '· кликайте по карте';
-                        } else if (this._points.length === 1) {
-                            textEl.textContent = '· поставьте вторую точку';
-                        } else if (this._points.length === 2) {
-                            textEl.textContent = '· продолжайте или нажмите «Площадь»';
-                        } else {
-                            textEl.textContent = '· нажмите «Площадь» для замыкания';
-                        }
+                        if (this._isClosed) textEl.textContent = '· площу розраховано';
+                        else if (this._points.length === 0) textEl.textContent = '· клікайте по карті';
+                        else if (this._points.length === 1) textEl.textContent = '· поставте другу точку';
+                        else if (this._points.length === 2) textEl.textContent = '· продовжуйте або натисніть «Площа»';
+                        else textEl.textContent = '· натисніть «Площа» для замикання';
                     }
                 },
-
                 _activate: function() {
                     this._clearAll();
                     this._map.closePopup();
                     measureModeActive = true;
-
                     setDeepStateInteractive(false);
-
                     this._active = true;
                     this._btn.classList.add('active');
                     this._panel.classList.add('visible');
                     this._hint.classList.add('visible');
                     this._updateHint();
-
-                    this._clickHandler   = this._onMapClick.bind(this);
-                    this._moveHandler    = this._onMapMove.bind(this);
+                    this._clickHandler = this._onMapClick.bind(this);
+                    this._moveHandler = this._onMapMove.bind(this);
                     this._contextHandler = function(e) { L.DomEvent.preventDefault(e); };
-
                     this._map.on('click', this._clickHandler);
                     this._map.on('mousemove', this._moveHandler);
                     this._map.on('contextmenu', this._contextHandler);
                     this._map.getContainer().style.cursor = 'crosshair';
                 },
-
                 _finish: function() {
                     this._active = false;
                     this._btn.classList.remove('active');
                     this._panel.classList.remove('visible');
                     this._hint.classList.remove('visible');
                     measureModeActive = false;
-
                     setDeepStateInteractive(true);
-
-                    if (this._clickHandler)   this._map.off('click', this._clickHandler);
-                    if (this._moveHandler)    this._map.off('mousemove', this._moveHandler);
+                    if (this._clickHandler) this._map.off('click', this._clickHandler);
+                    if (this._moveHandler) this._map.off('mousemove', this._moveHandler);
                     if (this._contextHandler) this._map.off('contextmenu', this._contextHandler);
                     this._map.getContainer().style.cursor = '';
-
                     this._clearAll();
                 },
-
                 _clearAll: function() {
                     var map = this._map;
                     if (this._startMarker) { map.removeLayer(this._startMarker); this._startMarker = null; }
-                    if (this._endMarker)   { map.removeLayer(this._endMarker);   this._endMarker = null; }
-                    if (this._line)        { map.removeLayer(this._line);        this._line = null; }
-                    if (this._polygon)     { map.removeLayer(this._polygon);     this._polygon = null; }
-                    if (this._preview)     { map.removeLayer(this._preview);     this._preview = null; }
-                    if (this._tooltip)     { map.removeLayer(this._tooltip);     this._tooltip = null; }
-                    this._points = [];
-                    this._isClosed = false;
-                    this._updateHint();
+                    if (this._endMarker) { map.removeLayer(this._endMarker); this._endMarker = null; }
+                    if (this._line) { map.removeLayer(this._line); this._line = null; }
+                    if (this._polygon) { map.removeLayer(this._polygon); this._polygon = null; }
+                    if (this._preview) { map.removeLayer(this._preview); this._preview = null; }
+                    if (this._tooltip) { map.removeLayer(this._tooltip); this._tooltip = null; }
+                    this._points = []; this._isClosed = false; this._updateHint();
                 },
-
-                _onMapClick: function(e) {
-                    if (!this._active) return;
-                    this._addPoint(e.latlng);
-                },
-
+                _onMapClick: function(e) { if (!this._active) return; this._addPoint(e.latlng); },
                 _onMapMove: function(e) {
-                    if (!this._active) return;
-                    if (this._points.length === 0) return;
-                    if (this._isClosed) return;
-
+                    if (!this._active || this._points.length === 0 || this._isClosed) return;
                     var last = this._points[this._points.length - 1];
-
                     if (!this._preview) {
-                        this._preview = L.polyline([last, e.latlng], {
-                            color: LINE_COLOR, weight: 3, opacity: PREVIEW_OPACITY,
-                            interactive: false
-                        }).addTo(this._map);
+                        this._preview = L.polyline([last, e.latlng], { color: LINE_COLOR, weight: 3, opacity: PREVIEW_OPACITY, interactive: false }).addTo(this._map);
                     } else {
                         this._preview.setLatLngs([last, e.latlng]);
                     }
-
                     var live = this._totalDistance() + this._map.distance(last, e.latlng);
                     this._setTooltip(e.latlng, this._formatDistance(live));
                 },
-
                 _addPoint: function(latlng) {
                     if (this._isClosed) return;
                     this._points.push(latlng);
-
                     if (this._points.length === 1) {
                         this._startMarker = L.circleMarker(latlng, DOT_STYLE).addTo(this._map);
-                        this._endMarker   = L.circleMarker(latlng, DOT_STYLE).addTo(this._map);
+                        this._endMarker = L.circleMarker(latlng, DOT_STYLE).addTo(this._map);
                     } else {
                         this._endMarker.setLatLng(latlng);
                     }
-
                     this._renderShape();
                     this._setTooltip(latlng, this._summaryText());
                     this._updateHint();
                 },
-
                 _closePolygon: function() {
                     if (this._points.length < 3 || this._isClosed) return;
                     this._isClosed = true;
@@ -803,77 +1126,52 @@
                     this._setTooltip(this._points[0], this._summaryText());
                     this._updateHint();
                 },
-
                 _renderShape: function() {
                     var map = this._map;
-                    if (this._line)    { map.removeLayer(this._line);    this._line = null; }
+                    if (this._line) { map.removeLayer(this._line); this._line = null; }
                     if (this._polygon) { map.removeLayer(this._polygon); this._polygon = null; }
-
                     if (this._points.length < 2) return;
-
                     if (this._isClosed) {
-                        this._polygon = L.polygon(this._points, {
-                            color: LINE_COLOR, weight: 3, opacity: LINE_OPACITY,
-                            fillColor: LINE_COLOR, fillOpacity: 0.15,
-                            interactive: false
-                        }).addTo(map);
+                        this._polygon = L.polygon(this._points, { color: LINE_COLOR, weight: 3, opacity: LINE_OPACITY, fillColor: LINE_COLOR, fillOpacity: 0.15, interactive: false }).addTo(map);
                     } else {
-                        this._line = L.polyline(this._points, {
-                            color: LINE_COLOR, weight: 3, opacity: LINE_OPACITY,
-                            interactive: false
-                        }).addTo(map);
+                        this._line = L.polyline(this._points, { color: LINE_COLOR, weight: 3, opacity: LINE_OPACITY, interactive: false }).addTo(map);
                     }
                 },
-
                 _setTooltip: function(latlng, html) {
                     if (!this._tooltip) {
-                        this._tooltip = L.tooltip({
-                            permanent: true, direction: 'top', offset: [0, -14],
-                            className: 'measure-tooltip', interactive: false, opacity: 1
-                        }).setLatLng(latlng).setContent(html).addTo(this._map);
+                        this._tooltip = L.tooltip({ permanent: true, direction: 'top', offset: [0, -14], className: 'measure-tooltip', interactive: false, opacity: 1 }).setLatLng(latlng).setContent(html).addTo(this._map);
                     } else {
                         this._tooltip.setLatLng(latlng).setContent(html);
                     }
                 },
-
                 _summaryText: function() {
                     if (this._points.length === 0) return '';
-                    if (this._points.length === 1) return 'Поставьте вторую точку';
-
+                    if (this._points.length === 1) return 'Поставте другу точку';
                     if (this._isClosed && this._points.length >= 3) {
                         var areaKm2 = geodesicAreaMeters2(this._points) / 1e6;
                         var per = this._totalDistance() + this._map.distance(this._points[this._points.length - 1], this._points[0]);
-                        return '<span class="tt-icon">' + ICON_AREA.replace('<svg ', '<svg class="tt-icon" ') + '</span>' +
-                               this._formatArea(areaKm2) +
-                               '<span class="tt-sep">·</span>' +
-                               this._formatDistance(per);
+                        return '<span class="tt-icon">' + ICON_AREA.replace('<svg ', '<svg class="tt-icon" ') + '</span>' + this._formatArea(areaKm2) + '<span class="tt-sep">·</span>' + this._formatDistance(per);
                     }
                     return this._formatDistance(this._totalDistance());
                 },
-
                 _totalDistance: function() {
                     var total = 0;
-                    for (var i = 1; i < this._points.length; i++) {
-                        total += this._map.distance(this._points[i - 1], this._points[i]);
-                    }
+                    for (var i = 1; i < this._points.length; i++) total += this._map.distance(this._points[i - 1], this._points[i]);
                     return total;
                 },
-
                 _formatDistance: function(meters) {
                     if (meters < 1000) return Math.round(meters) + ' м';
                     if (meters < 10000) return (meters / 1000).toFixed(2) + ' км';
                     return (meters / 1000).toFixed(1) + ' км';
                 },
-
                 _formatArea: function(km2) {
                     if (km2 < 0.001) return (km2 * 1e6).toFixed(0) + ' м²';
-                    if (km2 < 1)     return km2.toFixed(3) + ' км²';
-                    if (km2 < 100)   return km2.toFixed(2) + ' км²';
-                    if (km2 < 1000)  return km2.toFixed(1) + ' км²';
-                    return Math.round(km2).toLocaleString('ru-RU') + ' км²';
+                    if (km2 < 1) return km2.toFixed(3) + ' км²';
+                    if (km2 < 100) return km2.toFixed(2) + ' км²';
+                    if (km2 < 1000) return km2.toFixed(1) + ' км²';
+                    return Math.round(km2).toLocaleString('uk-UA') + ' км²';
                 }
             });
-
             new MeasureControl().addTo(map);
         })();
     </script>
